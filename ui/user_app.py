@@ -32,11 +32,15 @@ def main():
         layout="wide",
     )
     
-    # Initialize session state for API key
+    # Initialize session state for API key and results
     if 'api_key' not in st.session_state:
         st.session_state.api_key = ""
     if 'api_key_valid' not in st.session_state:
         st.session_state.api_key_valid = False
+    if 'results' not in st.session_state:
+        st.session_state.results = {}
+    if 'selected_types' not in st.session_state:
+        st.session_state.selected_types = []
     
     st.title("🔄 Content Repurposer")
     st.subheader("Transform your articles into multiple content formats")
@@ -245,6 +249,10 @@ def main():
                                 custom_instructions
                             )
                         
+                        # Store results and selected types in session state
+                        st.session_state.results = results
+                        st.session_state.selected_types = selected_types
+                        
                         # Complete progress
                         progress_bar.progress(100)
                         progress_text.text("All content generated successfully!")
@@ -256,31 +264,6 @@ def main():
                         
                         # Update status
                         status_container.success("Content repurposed successfully!")
-                        
-                        # Create tabs for each content type
-                        tabs = st.tabs([content_type.capitalize() for content_type in selected_types])
-                        
-                        for i, content_type in enumerate(selected_types):
-                            with tabs[i]:
-                                st.markdown("### " + content_type.capitalize() + " Content")
-                                
-                                # Display the content with markdown rendering
-                                st.markdown(results[content_type])
-                                
-                                # Also provide a raw text area for copying
-                                with st.expander("Show copyable version"):
-                                    st.text_area(
-                                        "Raw Content",
-                                        value=results[content_type],
-                                        height=400
-                                    )
-                                
-                                st.download_button(
-                                    label=f"Download {content_type.capitalize()} Content",
-                                    data=results[content_type],
-                                    file_name=f"{content_type}_content.txt",
-                                    mime="text/plain"
-                                )
                     
                     except Exception as e:
                         status_container.error(f"An error occurred: {str(e)}")
@@ -299,6 +282,33 @@ def main():
                             st.error("API key error. Please check your Gemini API key and try validating it again.")
                         else:
                             st.error("An unknown error occurred. Please check the logs for details.")
+        
+        # Display results if they exist in session state
+        if st.session_state.results and st.session_state.selected_types:
+            # Create tabs for each content type
+            tabs = st.tabs([content_type.capitalize() for content_type in st.session_state.selected_types])
+            
+            for i, content_type in enumerate(st.session_state.selected_types):
+                with tabs[i]:
+                    st.markdown("### " + content_type.capitalize() + " Content")
+                    
+                    # Display the content with markdown rendering
+                    st.markdown(st.session_state.results[content_type])
+                    
+                    # Also provide a raw text area for copying
+                    with st.expander("Show copyable version"):
+                        st.text_area(
+                            "Raw Content",
+                            value=st.session_state.results[content_type],
+                            height=400
+                        )
+                    
+                    st.download_button(
+                        label=f"Download {content_type.capitalize()} Content",
+                        data=st.session_state.results[content_type],
+                        file_name=f"{content_type}_content.txt",
+                        mime="text/plain"
+                    )
     else:
         # Show a placeholder when API key is not valid
         st.info("Please enter and validate your API key to use the app.")
